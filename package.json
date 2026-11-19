@@ -1,0 +1,12 @@
+{
+  "name": "amana",
+  "private": true,
+  "description": "A sealed will for your crypto on BNB Chain, carried out by the people you trust.",
+  "scripts": {
+    "postinstall": "cd agent && npm install --omit=dev",
+    "start": "node agent/src/server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

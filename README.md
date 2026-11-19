@@ -134,9 +134,11 @@ Agent ID. Mainnet is where real Agent IDs exist, so that's where Amana must live
    BSCSCAN_API_KEY=YOUR_KEY npx hardhat verify --network bsc <Amana address> 0x60b9262456de011f7d15a54cdd8c48baaa8b022f
    ```
    On mainnet the script uses the real Agent ID contract and offers USDT, USDC, WBNB, BTCB and ETH.
-4. **Run the agent online** on any Node.js host (Render, Railway, a small VPS). Copy `agent/.env.example` to
-   `agent/.env` and set `RPC_URL=https://bsc-rpc.publicnode.com`, `KEEPER_PRIVATE_KEY`, `APP_URL` (your public
-   address), and optionally `ANTHROPIC_API_KEY` and `TELEGRAM_BOT_TOKEN`.
+4. **Run the app and agent online (Railway).** New project > Deploy from GitHub repo > `amana-will/amana`.
+   Add a **volume** mounted at `/data`, then set the variables `DATA_DIR=/data`, `APP_URL=https://<your Railway domain>`
+   and `POLL_SECONDS=60` (optional: `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN`). On first start the agent creates its
+   own gas wallet and prints its address in the logs: send it about 0.005 BNB. Back up the volume's `agent-key.json`
+   and `keeper-key.json`.
 5. **Push this folder to a public GitHub repository.**
 
 Want to rehearse first? Use `--network bscTestnet` with free test BNB from the

@@ -23,7 +23,7 @@ if (!fs.existsSync(deploymentPath)) {
 export const deployment = JSON.parse(fs.readFileSync(deploymentPath, "utf8"));
 
 export const config = {
-  rpcUrl: process.env.RPC_URL || (deployment.chainId === 31337 ? "http://127.0.0.1:8545" : "https://bsc-testnet-rpc.publicnode.com"),
+  rpcUrl: process.env.RPC_URL || ({ 31337: "http://127.0.0.1:8545", 97: "https://bsc-testnet-rpc.publicnode.com", 56: "https://bsc-dataseed.bnbchain.org" })[deployment.chainId],
   // Hot wallet that only pays gas to finalize releases and pay heirs. It never holds anyone's money.
   // Locally it defaults to Hardhat's public test account #9.
   keeperKey: process.env.KEEPER_PRIVATE_KEY ||

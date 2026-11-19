@@ -269,7 +269,8 @@ app.use(express.static(path.join(ROOT, "web")));
 app.listen(config.port, async () => {
   console.log(`Amana is running at ${config.appUrl}`);
   console.log(`Chain ${deployment.chainId} · Amana ${deployment.amana} · AI wishes: ${config.anthropicKey ? "Claude" : "basic reader"}`);
-  if (!keeper) console.log("No KEEPER_PRIVATE_KEY: the agent will alert people but won't send transactions itself.");
+  const gas = await provider.getBalance(keeper.address).catch(() => null);
+  console.log(`Agent gas wallet: ${keeper.address} (${gas === null ? "balance unknown" : ethers.formatEther(gas) + " BNB"}). Send it a little BNB so it can act.`);
   if (config.telegramToken) {
     try { botName = (await telegram("getMe", {})).username; console.log(`Telegram bot: @${botName}`); } catch (e) { console.error("Telegram:", e.message); }
   }

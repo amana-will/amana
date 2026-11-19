@@ -1,8 +1,23 @@
+import fs from "fs";
+import path from "path";
 import { ethers } from "ethers";
 import { config, deployment } from "./config.js";
 
 export const provider = new ethers.JsonRpcProvider(config.rpcUrl, deployment.chainId, { staticNetwork: true });
-export const keeper = config.keeperKey ? new ethers.Wallet(config.keeperKey, provider) : null;
+
+// The agent's gas wallet. It only pays fees to release vaults, open verified wills and pay confirmed heirs;
+// it never holds anyone's money. Unless KEEPER_PRIVATE_KEY is set, it is created on first run and kept in
+// DATA_DIR/keeper-key.json. Send it a little BNB (0.005 is plenty to start).
+function keeperKey() {
+  if (config.keeperKey) return config.keeperKey;
+  const file = path.join(config.dataDir, "keeper-key.json");
+  if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, "utf8")).privateKey;
+  const w = ethers.Wallet.createRandom();
+  fs.mkdirSync(config.dataDir, { recursive: true });
+  fs.writeFileSync(file, JSON.stringify({ address: w.address, privateKey: w.privateKey }), { mode: 0o600 });
+  return w.privateKey;
+}
+export const keeper = new ethers.Wallet(keeperKey(), provider);
 
 export const amana = new ethers.Contract(deployment.amana, deployment.abi.amana, keeper || provider);
 export const erc20 = (addr) => new ethers.Contract(addr, deployment.abi.token, provider);
