@@ -9,6 +9,9 @@ you chose) and share it between your heirs, each with a letter from you.
 
 Built for the BNB Chain × Binance Wallet **Agent ID Hackathon**.
 
+**Live on BNB Smart Chain:** [`0x2FCdb32701a33888BDeF82A7406cB59bC4A011a2`](https://bscscan.com/address/0x2FCdb32701a33888BDeF82A7406cB59bC4A011a2#code)
+(source verified on BscScan, deployed at block 134507526)
+
 ---
 
 ## How it works
@@ -93,7 +96,7 @@ Terminal 2:
 ```bash
 cd contracts
 npx hardhat test                                   # optional: 22 tests
-npx hardhat run scripts/deploy.js --network localhost
+npx hardhat run scripts/deploy.js --network localhost   # replaces shared/deployment.json with local addresses
 cd ../agent
 node src/demo-setup.js
 npm start

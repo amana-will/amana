@@ -3,4 +3,3 @@ agent/.env
 agent/data/
 contracts/artifacts/
 contracts/cache/
-shared/deployment.json
