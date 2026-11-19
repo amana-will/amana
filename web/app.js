@@ -124,19 +124,22 @@ async function boot() {
     try { pick = localStorage.getItem("amana-demo-as") || pick; } catch {}
     await actAs(demoPeople[pick] ? pick : Object.keys(demoPeople)[0]);
   } else {
-    provider = window.ethereum ? new E.BrowserProvider(window.ethereum) : new E.JsonRpcProvider(CFG.rpcUrl, CFG.chainId, { staticNetwork: true });
-    if (window.ethereum) {
-      const accts = await window.ethereum.request({ method: "eth_accounts" }).catch(() => []);
-      if (accts.length) await connect(true);
-      window.ethereum.on?.("accountsChanged", () => location.reload());
-      window.ethereum.on?.("chainChanged", () => location.reload());
-    }
+    // Read the chain through a public node; the wallet is only used to sign. Never wait on the wallet to show the page.
+    provider = new E.JsonRpcProvider(CFG.rpcUrl, CFG.chainId, { staticNetwork: true });
   }
   renderAccount();
   await renderDemoBar();
   window.addEventListener("hashchange", route);
   route();
+  if (!CFG.isLocal && window.ethereum) {
+    const accts = await withTimeout(window.ethereum.request({ method: "eth_accounts" }), 4000).catch(() => []);
+    if (accts?.length) await connect(true);
+    window.ethereum.on?.("accountsChanged", () => location.reload());
+    window.ethereum.on?.("chainChanged", () => location.reload());
+  }
 }
+
+const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("Your wallet didn't answer. Open it, unlock it, and try again.")), ms))]);
 
 async function actAs(name) {
   if (!demoPeople[name]) return;
@@ -150,14 +153,13 @@ async function connect(silent) {
   if (!window.ethereum) return toast("No wallet found. Open Amana in the Binance Wallet app's browser.", true);
   try {
     const bp = new E.BrowserProvider(window.ethereum);
-    if (!silent) await bp.send("eth_requestAccounts", []);
-    const net = await bp.getNetwork();
-    if (Number(net.chainId) !== CFG.chainId) {
-      try { await bp.send("wallet_switchEthereumChain", [{ chainId: "0x" + CFG.chainId.toString(16) }]); }
+    if (!silent) await withTimeout(bp.send("eth_requestAccounts", []), 120000);
+    const chainId = Number(await withTimeout(window.ethereum.request({ method: "eth_chainId" }), 8000));
+    if (chainId !== CFG.chainId) {
+      try { await withTimeout(bp.send("wallet_switchEthereumChain", [{ chainId: "0x" + CFG.chainId.toString(16) }]), 60000); }
       catch { toast(`Switch your wallet to ${chainName()} and reload.`, true); return; }
     }
-    provider = bp;
-    signer = await bp.getSigner();
+    signer = await new E.BrowserProvider(window.ethereum).getSigner();
     me = await signer.getAddress();
     renderAccount();
     route();
