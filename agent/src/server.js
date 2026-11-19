@@ -14,6 +14,10 @@ import { tick, emojiText, nameIn, vaultLink } from "./watcher.js";
 import { tryOpen, agentPublicKey } from "./opener.js";
 import { pollTelegram, telegram, notify } from "./notify.js";
 
+// Never let one failed network call bring the whole agent down.
+process.on("unhandledRejection", (e) => console.error("Unhandled error:", e?.shortMessage || e?.message || e));
+process.on("uncaughtException", (e) => console.error("Uncaught error:", e?.shortMessage || e?.message || e));
+
 const app = express();
 app.use(express.json({ limit: "400kb" }));
 
