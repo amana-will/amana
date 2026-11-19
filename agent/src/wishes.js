@@ -4,15 +4,15 @@
 import { config } from "./config.js";
 
 const SYSTEM = `You turn a person's inheritance wishes into strict JSON for a smart contract.
-People are identified by Agent IDs such as "mama.ai". Use only the Agent IDs given in the list.
+People are identified by Agent IDs such as "mom.ai". Use only the Agent IDs given in the list.
 Reply with JSON only, no prose, in this exact shape:
-{"heirs":[{"name":"mama.ai","percent":50,"unlockDate":null,"why":"short reason"}],
+{"heirs":[{"name":"mom.ai","percent":50,"unlockDate":null,"why":"short reason"}],
  "questions":["..."],
  "summary":"one plain sentence"}
 Rules:
 - percent values are whole numbers that add up to exactly 100. "Half" is 50, "a third" is 33 (put the rounding on the largest share).
 - unlockDate is YYYY-MM-DD or null. For "when he turns 25" use the person's birth date if given; if it isn't, set unlockDate null and add a question asking for it.
-- If a wish can't be enforced by a contract (for example "use it for Hajj"), keep it out of the rules and mention in summary that it belongs in the letter.
+- If a wish can't be enforced by a contract (for example "use it for trip to Italy"), keep it out of the rules and mention in summary that it belongs in the letter.
 - Never invent people, amounts or dates.`;
 
 export async function parseWishes({ text, people, today }) {
@@ -41,7 +41,7 @@ async function askClaude(prompt) {
   return JSON.parse(json);
 }
 
-// Handles the common patterns: "50% to mama", "half to my mother (mama)", "when he turns 25", "up to 400 a month".
+// Handles the common patterns: "50% to mom", "half to my mother (mom)", "when he turns 25", "up to 400 a month".
 function basicReader(text, people, today) {
   const sentences = text.split(/(?<=[.!?;\n])\s+/);
   const heirs = [];
@@ -84,6 +84,6 @@ function validate(r, people) {
   }).map((h) => ({ name: h.name, percent: Math.round(Number(h.percent)), unlockDate: h.unlockDate || null, why: h.why || "" }));
   const total = heirs.reduce((a, h) => a + h.percent, 0);
   if (heirs.length && total !== 100) problems.push(`Shares add up to ${total}%, not 100%. Adjust them below.`);
-  if (!heirs.length) problems.push("No heirs found. Name who gets what, for example “50% to mama”.");
+  if (!heirs.length) problems.push("No heirs found. Name who gets what, for example “50% to mom”.");
   return { heirs, questions: [...(r.questions || []), ...problems], summary: r.summary || "" };
 }

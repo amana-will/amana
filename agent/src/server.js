@@ -31,7 +31,7 @@ const vaultId = (x) => {
 };
 const cleanName = (n) => {
   const s = String(n || "").trim().toLowerCase();
-  if (!/^[a-z0-9-]{1,63}\.ai$/.test(s)) throw fail(400, "Write your Agent ID, like karim.ai.");
+  if (!/^[a-z0-9-]{1,63}\.ai$/.test(s)) throw fail(400, "Write your Agent ID, like michael.ai.");
   return s;
 };
 

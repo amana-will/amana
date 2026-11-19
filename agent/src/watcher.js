@@ -1,6 +1,6 @@
 // The agent's main loop. Every few seconds it reads every vault and acts on what changed.
 // It uses chain time, so local "skip days" demos work. Names come from the agent's private
-// records (never from the chain), so messages say "yassine.ai" while the chain only sees wallets.
+// records (never from the chain), so messages say "james.ai" while the chain only sees wallets.
 import { config } from "./config.js";
 import { store, save, agentLog } from "./store.js";
 import { notify } from "./notify.js";

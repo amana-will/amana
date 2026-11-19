@@ -1,5 +1,5 @@
 // Prepares a local demo: gives Hardhat's test accounts names, mints each a test Agent ID,
-// and mints test USDC to Yassine. Run after `npx hardhat node` and the local deploy.
+// and mints test USDC to James. Run after `npx hardhat node` and the local deploy.
 import fs from "fs";
 import path from "path";
 import { ethers } from "ethers";
@@ -12,7 +12,7 @@ if (!config.isLocal) {
   process.exit(1);
 }
 
-const NAMES = ["yassine.ai", "karim.ai", "salma.ai", "omar.ai", "mama.ai", "ilyas.ai"];
+const NAMES = ["james.ai", "michael.ai", "emily.ai", "david.ai", "mom.ai", "ryan.ai"];
 const accounts = await provider.send("eth_accounts", []);
 const people = {};
 NAMES.forEach((n, i) => (people[n] = ethers.getAddress(accounts[i])));
@@ -23,8 +23,8 @@ const minter = await provider.getSigner(accounts[0]);
 for (const a of Object.values(people)) {
   if ((await agentIdNft.balanceOf(a)) === 0n) await (await agentIdNft.connect(minter).mint(a)).wait();
 }
-await (await erc20(deployment.tokens[0].address).connect(minter).mint(people["yassine.ai"], ethers.parseUnits("5000", 18))).wait();
+await (await erc20(deployment.tokens[0].address).connect(minter).mint(people["james.ai"], ethers.parseUnits("5000", 18))).wait();
 
 console.log("Demo people (each holds a test Agent ID):");
 for (const [n, a] of Object.entries(people)) console.log(`  ${n.padEnd(11)} ${a}`);
-console.log("Minted 5,000 test USDC to yassine.ai.");
+console.log("Minted 5,000 test USDC to james.ai.");

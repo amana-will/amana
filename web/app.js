@@ -120,7 +120,7 @@ async function boot() {
   if (CFG.isLocal) {
     provider = new E.JsonRpcProvider(location.origin + "/rpc", CFG.chainId, { staticNetwork: true });
     demoPeople = await api("/api/dev/people");
-    let pick = "yassine.ai";
+    let pick = "james.ai";
     try { pick = localStorage.getItem("amana-demo-as") || pick; } catch {}
     await actAs(demoPeople[pick] ? pick : Object.keys(demoPeople)[0]);
   } else {
@@ -417,7 +417,7 @@ async function createView(view) {
     </div>`;
   $("#create").onclick = async () => {
     const name = $("#myName").value.trim().toLowerCase();
-    if (!/^[a-z0-9-]{1,63}\.ai$/.test(name)) return toast("Write your Agent ID, like yassine.ai.", true);
+    if (!/^[a-z0-9-]{1,63}\.ai$/.test(name)) return toast("Write your Agent ID, like james.ai.", true);
     const plan = {
       checkInInterval: Math.round(Number($("#interval").value) * DAY),
       gracePeriod: Math.round(Number($("#grace").value) * DAY),
@@ -488,7 +488,7 @@ async function joinView(view) {
         </div>`;
       $("#ask").onclick = async () => {
         const name = $("#myName").value.trim().toLowerCase();
-        if (!/^[a-z0-9-]{1,63}\.ai$/.test(name)) return toast("Write your Agent ID, like karim.ai.", true);
+        if (!/^[a-z0-9-]{1,63}\.ai$/.test(name)) return toast("Write your Agent ID, like michael.ai.", true);
         try {
           const kp = await guardianKeypair(true);
           await send(() => amanaC(true).requestJoin(info.id, kp.publicKey), "Request sent.");
@@ -702,14 +702,14 @@ async function willView(view, id) {
     draft = saved ? { id, ...saved } : {
       id,
       people: CFG.isLocal
-        ? [{ name: "mama.ai", relation: "mother", birthDate: "" }, { name: "salma.ai", relation: "wife", birthDate: "" }, { name: "ilyas.ai", relation: "little brother", birthDate: "2006-03-14" }]
+        ? [{ name: "mom.ai", relation: "mother", birthDate: "" }, { name: "emily.ai", relation: "wife", birthDate: "" }, { name: "ryan.ai", relation: "little brother", birthDate: "2006-03-14" }]
         : [{ name: "", relation: "", birthDate: "" }],
-      wishes: CFG.isLocal ? "Give half to my mother. 30% to Salma. My little brother Ilyas gets his 20% only when he turns 25." : "",
+      wishes: CFG.isLocal ? "Give half to my mother. 30% to Emily. My little brother Ryan gets his 20% only when he turns 25." : "",
       heirs: null,
       letters: CFG.isLocal ? {
-        "mama.ai": "Mama, if you're reading this, I didn't get to say goodbye properly. Thank you for every sacrifice you made for us. Please use this for the Hajj you always talked about. I love you. Yassine",
-        "salma.ai": "Salma, you were my home. Look after yourself first. Yassine",
-        "ilyas.ai": "Ilyas, finish your studies. This is waiting for you when you're 25. Make me proud. Yassine",
+        "mom.ai": "Mom, if you're reading this, I didn't get to say goodbye properly. Thank you for every sacrifice you made for us. Please use it for the trip to Italy you always talked about. I love you. James",
+        "emily.ai": "Emily, you were my home. Look after yourself first. James",
+        "ryan.ai": "Ryan, finish your studies. This is waiting for you when you're 25. Make me proud. James",
       } : {},
     };
   }
@@ -729,7 +729,7 @@ async function willView(view, id) {
       ${d.people.map((p, i) => `
         <div class="person" data-p="${i}">
           <div class="grid2">
-            <label>Their Agent ID<input data-f="name" value="${esc(p.name)}" placeholder="mama.ai"></label>
+            <label>Their Agent ID<input data-f="name" value="${esc(p.name)}" placeholder="mom.ai"></label>
             <label>Who they are<input data-f="relation" value="${esc(p.relation)}" placeholder="mother"></label>
           </div>
           <label>Birth date (only if your wishes mention their age)<input type="date" data-f="birthDate" value="${esc(p.birthDate)}"></label>

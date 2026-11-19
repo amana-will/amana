@@ -43,7 +43,7 @@ Built for the BNB Chain × Binance Wallet **Agent ID Hackathon**.
 |---|---|
 | Anyone, on the blockchain | That a wallet uses Amana and its approved limits, check-in times, status changes, guardian wallets (no names), guardian votes |
 | Nobody until a release | Who inherits, how much, lock dates, letters. Only a fingerprint and an encrypted copy are on-chain |
-| Members of the vault only | Names (yassine.ai, karim.ai), the join code, the agent's activity log |
+| Members of the vault only | Names (james.ai, michael.ai), the join code, the agent's activity log |
 | Everyone, after the will is opened | Heir shares and lock dates (the contract needs them to pay). Names and letters stay private |
 
 ## How Agent ID is used (core, not cosmetic)
@@ -105,17 +105,17 @@ npm start
 
 Open http://localhost:3000. The dark bar is for demos only: **Act as** switches person, the buttons move time.
 
-1. As `yassine.ai`: **Create my Amana**, then **Create my Amana** again. Copy the join code.
-2. As `karim.ai`, `salma.ai` and `omar.ai`: **I have a join code**, paste it, **Continue**, **Ask to join**.
-3. As `yassine.ai`: open the vault, tick the three people (the pictures match), **Approve**.
+1. As `james.ai`: **Create my Amana**, then **Create my Amana** again. Copy the join code.
+2. As `michael.ai`, `emily.ai` and `david.ai`: **I have a join code**, paste it, **Continue**, **Ask to join**.
+3. As `james.ai`: open the vault, tick the three people (the pictures match), **Approve**.
    **Write my will** > **Turn my wishes into rules** > **Seal my will**. Under "What your will covers",
    set a limit of 4000 tUSDC.
 4. Tap **+90 days**, then **+7 days** three times: three reminders, then the guardians are asked.
-5. As `karim.ai` and `omar.ai`: **Passed away**. Tap **+90 days** twice and **+7 days** (the 6-month wait). Amana collects
-   4,000 tUSDC from Yassine's wallet (he had 5,000; the other 1,000 stays).
-6. As `karim.ai` and `omar.ai`: **Unlock the will**. It opens.
-7. As `mama.ai`: **I have a join code** > paste > **I'm mama.ai**. As `karim.ai` and `omar.ai`: approve her.
-8. As `mama.ai`: open your messages and read Yassine's letter. Her 2,000 tUSDC (50%) has arrived.
+5. As `michael.ai` and `david.ai`: **Passed away**. Tap **+90 days** twice and **+7 days** (the 6-month wait). Amana collects
+   4,000 tUSDC from James's wallet (he had 5,000; the other 1,000 stays).
+6. As `michael.ai` and `david.ai`: **Unlock the will**. It opens.
+7. As `mom.ai`: **I have a join code** > paste > **I'm mom.ai**. As `michael.ai` and `david.ai`: approve her.
+8. As `mom.ai`: open your messages and read James's letter. Her 2,000 tUSDC (50%) has arrived.
 
 ## Go live on BNB Chain (what the hackathon requires)
 
