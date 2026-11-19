@@ -62,8 +62,9 @@ All vaults live in **one Amana contract**, so every action counts toward the pro
 
 No contract owner, pause, upgrade, fee or freeze. Coins can only leave the owner's wallet after a release
 (guardians' votes plus the waiting period), only up to the limits the owner approved, and only to heirs named in
-the sealed will and confirmed by the guardians. The owner can lower a limit to 0 at any time. The agent's
-wallet only pays gas to release vaults, open verified wills and pay confirmed heirs.
+the sealed will and confirmed by the guardians. The owner can lower a limit to 0 at any time. The agent sends no
+transactions: each person pays their own tiny network fee from their own Agent ID wallet, so every step counts as
+Agent ID activity. (Set `AGENT_PAYS_FEES=true` to let an agent gas wallet do the after-death steps instead.)
 
 ---
 
@@ -136,9 +137,7 @@ Agent ID. Mainnet is where real Agent IDs exist, so that's where Amana must live
    On mainnet the script uses the real Agent ID contract and offers USDT, USDC, WBNB, BTCB and ETH.
 4. **Run the app and agent online (Railway).** New project > Deploy from GitHub repo > `amana-will/amana`.
    Add a **volume** mounted at `/data`, then set the variables `DATA_DIR=/data`, `APP_URL=https://<your Railway domain>`
-   and `POLL_SECONDS=60` (optional: `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN`). On first start the agent creates its
-   own gas wallet and prints its address in the logs: send it about 0.005 BNB. Back up the volume's `agent-key.json`
-   and `keeper-key.json`.
+   and `POLL_SECONDS=60` (optional: `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN`). Back up the volume's `agent-key.json`.
 5. **Push this folder to a public GitHub repository.**
 
 Want to rehearse first? Use `--network bscTestnet` with free test BNB from the

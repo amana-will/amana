@@ -17,7 +17,7 @@ function keeperKey() {
   fs.writeFileSync(file, JSON.stringify({ address: w.address, privateKey: w.privateKey }), { mode: 0o600 });
   return w.privateKey;
 }
-export const keeper = new ethers.Wallet(keeperKey(), provider);
+export const keeper = config.agentPaysFees ? new ethers.Wallet(keeperKey(), provider) : null;
 
 export const amana = new ethers.Contract(deployment.amana, deployment.abi.amana, keeper || provider);
 export const erc20 = (addr) => new ethers.Contract(addr, deployment.abi.token, provider);

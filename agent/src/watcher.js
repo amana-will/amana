@@ -79,7 +79,7 @@ async function handle(id, now) {
         break;
       case "Released":
         agentLog(id, `The waiting period is over. Collected ${fmtTokens(v.tokens)} from ${who}'s wallet for the heirs.`);
-        for (const g of guardians) await notify(g, `It's time to open ${who}'s will. Please open Amana and tap “Unlock the will”. ${v.plan.threshold} guardians are needed.`, link);
+        for (const g of guardians) await notify(g, `${who}'s will can now be opened. Please open Amana and tap “Unlock the will”. ${v.plan.threshold} guardians are needed.`, link);
         break;
     }
   }
@@ -106,18 +106,28 @@ async function handle(id, now) {
     await notify(v.owner, `Reminder: your will can be opened on ${date(v.releaseAt)}. If you're alive, tap “I'm fine”.`, link);
   }
 
-  if (v.status === "Pending" && now >= v.releaseAt && keeper) {
-    const tx = await amana.finalize(id);
-    await tx.wait();
-    agentLog(id, `The waiting period ended with no check-in. Released the vault (tx ${tx.hash.slice(0, 10)}…).`);
+  // The waiting period is over. Someone presses "Release" (or the agent, if it pays fees).
+  if (v.status === "Pending" && now >= v.releaseAt) {
+    if (keeper) {
+      const tx = await amana.finalize(id);
+      await tx.wait();
+      agentLog(id, `The waiting period ended with no check-in. Released the vault (tx ${tx.hash.slice(0, 10)}…).`);
+    } else if (once(`releaseDue:${v.round}`)) {
+      agentLog(id, "The waiting period ended with no check-in. Asked the guardians to release the vault.");
+      for (const g of guardians) await notify(g, `The waiting period for ${who} is over. Please open Amana and tap “Release”. It costs a tiny network fee.`, link);
+    }
   }
 
-  if (v.released && !(v.opened && meta.will)) {
-    if (await tryOpen(id)) {
-      const list = meta.will.heirs.map((h) => `${h.name} (${h.shareBps / 100}%)`).join(", ");
-      for (const g of guardians) {
-        await notify(g, `${who}'s will is open. It names: ${list}. Please tell each of them gently, and ask them to open Amana with the join code ${meta.code || "you received"} and tap “I'm an heir”. You'll then confirm their wallet with matching emojis.`, link);
-      }
+  if (v.released && !v.opened) {
+    const ready = await tryOpen(id);
+    if (ready && !keeper && once("openDue")) {
+      for (const g of guardians) await notify(g, `${who}'s will is unlocked. Please open Amana and tap “Open the will” to record it on BNB Chain.`, link);
+    }
+  }
+  if (v.opened && meta.will && once("opened")) {
+    const list = meta.will.heirs.map((h) => `${h.name} (${h.shareBps / 100}%)`).join(", ");
+    for (const g of guardians) {
+      await notify(g, `${who}'s will is open. It names: ${list}. Please tell each of them gently, and ask them to open Amana with the join code ${meta.code || "you received"} and tap their name. You'll then confirm their wallet with matching emojis.`, link);
     }
   }
 
@@ -126,7 +136,7 @@ async function handle(id, now) {
       const w = meta.will?.heirs?.[h.index];
       if (h.wallet && once(`bound:${h.index}`)) {
         meta.names = { ...(meta.names || {}), [h.wallet.toLowerCase()]: w?.name || "heir" };
-        const locked = h.unlockAt > now ? ` It's kept safe until ${date(h.unlockAt)}, as ${who} wished.` : "";
+        const locked = h.unlockAt > now ? ` It's kept safe until ${date(h.unlockAt)}, as ${who} wished.` : " Open it and tap “Receive my share”.";
         await notify(h.wallet, `${who} left you something, and a letter.${locked}`, `${config.appUrl}/#/letter/${id}/${h.index}`);
       }
       if (h.wallet && !h.paid && h.unlockAt <= now && keeper) {

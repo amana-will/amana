@@ -28,17 +28,31 @@ function* subsets(items, k, start = 0, acc = []) {
 }
 
 const inFlight = new Map();
-/** Tries to open vault `id`'s will. Returns true when the will is open on-chain. */
+/**
+ * Unlocks vault `id`'s will once enough guardians have sent their key piece, and checks it against the
+ * on-chain fingerprint. Returns true when the will is unlocked (stored in the agent's private records).
+ * Recording it on-chain (openWill) is then done by a guardian from their own wallet, or by the agent if it pays fees.
+ */
 export function tryOpen(id) {
   if (!inFlight.has(id)) inFlight.set(id, attemptOpen(id).finally(() => inFlight.delete(id)));
   return inFlight.get(id);
+}
+
+/** The arguments a guardian's wallet passes to openWill. */
+export function openArgs(id) {
+  const w = store.meta[id]?.will;
+  if (!w) return null;
+  return { shares: w.heirs.map((h) => h.shareBps), unlocks: w.heirs.map((h) => h.unlockAt || 0), salt: w.salt };
 }
 
 async function attemptOpen(id) {
   const v = await readVault(id);
   if (!v.released) return false;
   const meta = (store.meta[id] ||= {});
-  if (v.opened && meta.will) return true;
+  if (meta.will) {
+    if (!v.opened && keeper) await recordOnChain(id);
+    return true;
+  }
 
   const sealed = await readSeal(id, v.sealedAtBlock);
   const raw = [];
@@ -60,15 +74,15 @@ async function attemptOpen(id) {
     agentLog(id, "The unlocked will doesn't match its on-chain fingerprint. Not opening it.");
     return false;
   }
-  if (!v.opened) {
-    if (!keeper) { agentLog(id, "The will is unlocked. Waiting for someone to open it on-chain (the agent has no gas wallet)."); }
-    else {
-      const tx = await amana.openWill(id, shares, unlocks, will.salt);
-      await tx.wait();
-    }
-  }
   meta.will = { heirs: will.heirs.map((h, i) => ({ index: i, name: h.name, relation: h.relation || "", shareBps: h.shareBps, unlockAt: h.unlockAt || 0, letter: h.letter || "" })), salt: will.salt };
   save();
   agentLog(id, `Guardians unlocked the will and it matched its fingerprint exactly. It names ${will.heirs.length} heir(s).`);
+  if (!v.opened && keeper) await recordOnChain(id);
   return true;
+}
+
+async function recordOnChain(id) {
+  const a = openArgs(id);
+  const tx = await amana.openWill(id, a.shares, a.unlocks, a.salt);
+  await tx.wait();
 }

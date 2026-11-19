@@ -235,6 +235,14 @@ async function renderDemoBar() {
 
 const hasAgentId = async (addr) => (await aidC().balanceOf(addr)) > 0n;
 
+// Everyone pays their own tiny network fees, so remind people with (almost) no BNB.
+async function feeNote() {
+  if (CFG.isLocal || !me) return "";
+  const bal = await provider.getBalance(me).catch(() => null);
+  if (bal === null || bal >= E.parseEther("0.0003")) return "";
+  return `<p class="warnbox">Keep a little BNB on BNB Smart Chain in this wallet (about $0.50 is plenty) to pay the tiny network fees for your actions in Amana.</p>`;
+}
+
 // ───────── data ─────────
 async function readVault(id) {
   const a = amanaC();
@@ -436,7 +444,8 @@ async function createView(view) {
 async function joinView(view) {
   if (!me) { view.innerHTML = connectCard("Connect the Agentic Wallet that holds your Agent ID."); $("#connect2")?.addEventListener("click", () => connect(false)); return; }
   if (!(await hasAgentId(me))) { view.innerHTML = needAgentIdCard(); bindMintAid(); return; }
-  view.innerHTML = `
+  const fee = await feeNote();
+  view.innerHTML = `${fee}
     <div class="card">
       <h1>Enter your join code</h1>
       <p class="small muted">Someone who trusts you gave you a code like AMANA-7K3Q-X9PD-M2TA, in person or by phone.</p>
@@ -503,6 +512,7 @@ async function vaultView(view, id) {
   const nameOf = (a) => meta.names?.[a.toLowerCase()] || short(a);
   const ownerName = meta.ownerName;
   const s = statusInfo(v, isOwner, ownerName);
+  const fee = isOwner || mine || myHeir ? await feeNote() : "";
   const votingOpen = v.status === "Alert";
   const lib = await seal();
   const covered = v.tokens.some((t) => t.coverage > 0n);
@@ -552,13 +562,18 @@ async function vaultView(view, id) {
         </div>`).join("")}
     </div>` : "";
 
-  const unlock = mine && v.released && !v.opened ? `
+  const unlock = mine && v.released && !v.opened ? (meta.willUnlocked ? `
     <div class="card">
-      <h2>Unlock ${esc(ownerName || "the")} will</h2>
+      <h2>The will is unlocked</h2>
+      <p>One last step: record it on BNB Chain. The contract checks it's exactly the will ${esc(ownerName || "they")} sealed. It costs a tiny network fee.</p>
+      <button type="button" id="openWill" class="primary big">Open the will</button>
+    </div>` : `
+    <div class="card">
+      <h2>Unlock ${esc(ownerName ? ownerName + "'s" : "the")} will</h2>
       <p>You hold one piece of the key. ${v.plan.threshold} pieces are needed to open it. ${meta.piecesSent ? `${meta.piecesSent} received so far.` : ""}</p>
       ${meta.sentMyPiece ? `<p class="okbox">You've sent your piece. Thank you.</p>` : `<button type="button" id="unlock" class="primary big">Unlock the will</button>
       <p class="small muted">Your wallet will ask for a signature to unlock your piece. It doesn't move any money.</p>`}
-    </div>` : "";
+    </div>`) : "";
 
   view.innerHTML = `
     <div class="card status ${s.tone === "good" ? "" : s.tone}">
@@ -567,7 +582,7 @@ async function vaultView(view, id) {
       ${isOwner && !v.released ? `<button class="primary big" type="button" id="checkin">I'm fine</button>` : ""}
     </div>
 
-    ${requests}${setup}
+    ${fee}${requests}${setup}
 
     ${mine && votingOpen ? `
     <div class="card">
@@ -582,11 +597,11 @@ async function vaultView(view, id) {
 
 
     ${v.status === "Pending" && now >= v.releaseAt ? `
-    <div class="card"><h2>The waiting period is over</h2><p>The agent normally does this. Anyone can if it's offline.</p><button type="button" id="finalize" class="primary">Release the vault</button></div>` : ""}
+    <div class="card"><h2>The waiting period is over</h2><p>${esc(ownerName || "The owner")} didn't check in. Tap “Release” so Amana collects what's left and the will can be unlocked. It costs a tiny network fee.</p><button type="button" id="finalize" class="primary big">Release</button></div>` : ""}
 
     ${unlock}${claims}
 
-    ${myHeir ? `<div class="card"><h2>What ${esc(ownerName || "they")} left you</h2><a class="btn primary" href="#/letter/${id}/${myHeir.index}">Read your letter</a></div>` : ""}
+    ${myHeir ? `<div class="card"><h2>What ${esc(ownerName || "they")} left you</h2><a class="btn primary" href="#/letter/${id}/${myHeir.index}">${myHeir.paid ? "Read your letter" : "Read your letter and receive your share"}</a></div>` : ""}
 
     ${isOwner || mine ? `
     ${isOwner && !v.released ? `
@@ -644,15 +659,22 @@ async function vaultView(view, id) {
   $$("[data-remove]").forEach((b) => b.addEventListener("click", () => send(() => A().removeGuardian(id, b.dataset.remove), "Guardian removed. Please re-seal your will.").then(refresh)));
   $$("[data-vote]").forEach((b) => b.addEventListener("click", () => send(() => A().vote(id, Number(b.dataset.vote)), "Thank you. Your answer is recorded.").then(refresh)));
   $("#finalize")?.addEventListener("click", () => send(() => A().finalize(id), "Released.").then(refresh));
+  const recordWill = async (args) => {
+    await send(() => A().openWill(id, args.shares, args.unlocks, args.salt), "The will is open and recorded on BNB Chain.");
+    refresh();
+  };
   $("#unlock")?.addEventListener("click", async () => {
     try {
       const kp = await guardianKeypair(false);
       const { piece } = await api(`/api/my-piece/${id}?${await authQuery()}`);
       const raw = lib.openSealed(kp.privateKey, piece);
       const r = await post("/api/key-piece", { id, piece: lib.sealFor(CFG.agentPublicKey, raw), auth: await signIn() });
-      toast(r.opened ? "The will is open." : "Thank you. Waiting for another guardian.");
-      refresh();
-    } catch (e) { toast(explain(e), true); }
+      if (r.unlocked && r.openArgs) { toast("Unlocked. Now confirm in your wallet to record it."); await recordWill(r.openArgs); }
+      else { toast("Thank you. Waiting for another guardian."); refresh(); }
+    } catch (e) { if (!$("#toast").textContent) toast(explain(e), true); }
+  });
+  $("#openWill")?.addEventListener("click", async () => {
+    try { await recordWill(await api(`/api/open-args/${id}?${await authQuery()}`)); } catch (e) { if (!$("#toast").textContent) toast(explain(e), true); }
   });
   $$("[data-claim]").forEach((b) => b.addEventListener("click", () => send(() => A().approveClaim(id, Number(b.dataset.claim), b.dataset.wallet), "Approved.").then(refresh)));
   $$("[data-pay]").forEach((b) => b.addEventListener("click", () => send(() => A().payout(id, Number(b.dataset.pay)), "Sent.").then(refresh)));
@@ -811,9 +833,9 @@ async function letterView(view, id, heir) {
       <div class="balance" style="font-size:24px">${esc(d.shares.filter((x) => BigInt(x.amount) > 0n).map((x) => amt(BigInt(x.amount), x.symbol)).join(" + ") || "nothing")}</div>
       ${d.paid ? `<p class="okbox">It has arrived in your wallet. You don't need to do anything.</p>`
         : locked ? `<p>Kept safe until <strong>${date(d.unlockAt)}</strong>, as ${esc(d.ownerName)} wished. Amana will send it to you on that day.</p>`
-        : `<p>Amana is sending it to you now.</p><button type="button" id="payNow">Send it now</button>`}
+        : `<p>It's ready for you. Tap below and confirm in your wallet. It costs a tiny network fee.</p>${await feeNote()}<button type="button" id="payNow" class="primary big">Receive my share</button>`}
     </div>`;
-  $("#payNow")?.addEventListener("click", () => send(() => amanaC(true).payout(id, heir), "Sent.").then(() => setTimeout(route, 400)));
+  $("#payNow")?.addEventListener("click", () => send(() => amanaC(true).payout(id, heir), "It's in your wallet now.").then(() => setTimeout(route, 400)));
 }
 
 boot().catch((e) => { $("#view").innerHTML = `<div class="card"><h2>Amana couldn't start</h2><p>${esc(e.message)}</p></div>`; });

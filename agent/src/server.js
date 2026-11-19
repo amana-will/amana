@@ -11,7 +11,7 @@ import { store, save, agentLog } from "./store.js";
 import { provider, amana, readVault, readSeal, chainNow, keeper, codeHash, normalizeCode } from "./chain.js";
 import { parseWishes } from "./wishes.js";
 import { tick, emojiText, nameIn, vaultLink } from "./watcher.js";
-import { tryOpen, agentPublicKey } from "./opener.js";
+import { tryOpen, agentPublicKey, openArgs } from "./opener.js";
 import { pollTelegram, telegram, notify } from "./notify.js";
 
 // Never let one failed network call bring the whole agent down.
@@ -180,6 +180,7 @@ app.get("/api/vault/:id", wrap(async (req, res) => {
     claims,
     will: v.opened && meta.will && (isOwner || isGuardian) ? meta.will.heirs.map((h) => ({ name: h.name, relation: h.relation, shareBps: h.shareBps, unlockAt: h.unlockAt })) : null,
     piecesSent: Object.keys(store.pieces[id] || {}).length,
+    willUnlocked: !!meta.will,
     sentMyPiece: !!store.pieces[id]?.[addr],
     log: store.log.filter((l) => l.vault === id).slice(0, 40),
     heirIndex: heir ? heir.index : null,
@@ -209,9 +210,19 @@ app.post("/api/key-piece", wrap(async (req, res) => {
   (store.pieces[id] ||= {})[addr] = String(req.body.piece);
   save();
   agentLog(id, `${nameIn(id, addr)} sent their piece of the key (${Object.keys(store.pieces[id]).length} of ${v.plan.threshold} needed).`);
-  const opened = await tryOpen(id).catch((e) => { console.error(e); return false; });
-  if (opened) tick();
-  res.json({ ok: true, opened });
+  const unlocked = await tryOpen(id).catch((e) => { console.error(e); return false; });
+  res.json({ ok: true, unlocked, openArgs: unlocked ? openArgs(id) : null });
+}));
+
+// Once the will is unlocked, a guardian's wallet records it on-chain with these values.
+app.get("/api/open-args/:id", wrap(async (req, res) => {
+  const addr = who(authFrom(req));
+  const id = vaultId(req.params.id);
+  const { isGuardian } = await roleIn(id, addr);
+  if (!isGuardian) throw fail(403, "Only a guardian can open the will.");
+  const a = openArgs(id);
+  if (!a) throw fail(404, "The will isn't unlocked yet.");
+  res.json(a);
 }));
 
 // An heir's letter, once their wallet is approved.
@@ -273,8 +284,10 @@ app.use(express.static(path.join(ROOT, "web")));
 app.listen(config.port, async () => {
   console.log(`Amana is running at ${config.appUrl}`);
   console.log(`Chain ${deployment.chainId} · Amana ${deployment.amana} · AI wishes: ${config.anthropicKey ? "Claude" : "basic reader"}`);
-  const gas = await provider.getBalance(keeper.address).catch(() => null);
-  console.log(`Agent gas wallet: ${keeper.address} (${gas === null ? "balance unknown" : ethers.formatEther(gas) + " BNB"}). Send it a little BNB so it can act.`);
+  if (keeper) {
+    const gas = await provider.getBalance(keeper.address).catch(() => null);
+    console.log(`Agent pays fees from ${keeper.address} (${gas === null ? "balance unknown" : ethers.formatEther(gas) + " BNB"}).`);
+  } else console.log("People pay their own network fees; the agent only reminds and guides them.");
   if (config.telegramToken) {
     try { botName = (await telegram("getMe", {})).username; console.log(`Telegram bot: @${botName}`); } catch (e) { console.error("Telegram:", e.message); }
   }

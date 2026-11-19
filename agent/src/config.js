@@ -24,7 +24,9 @@ export const deployment = JSON.parse(fs.readFileSync(deploymentPath, "utf8"));
 
 export const config = {
   rpcUrl: process.env.RPC_URL || ({ 31337: "http://127.0.0.1:8545", 97: "https://bsc-testnet-rpc.publicnode.com", 56: "https://bsc-dataseed.bnbchain.org" })[deployment.chainId],
-  // Hot wallet that only pays gas to finalize releases and pay heirs. It never holds anyone's money.
+  // By default people pay their own tiny network fees from their own Agent ID wallets, and the agent sends no
+  // transactions. Set AGENT_PAYS_FEES=true to let the agent's own gas wallet do the after-death steps instead.
+  agentPaysFees: process.env.AGENT_PAYS_FEES === "true",
   // Locally it defaults to Hardhat's public test account #9.
   keeperKey: process.env.KEEPER_PRIVATE_KEY ||
     (deployment.chainId === 31337 ? "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6" : ""),
